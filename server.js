@@ -9,8 +9,22 @@ dotenv.config();
 const app = express();
 
 // Middleware
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173", "*"];
+
 app.use(cors({
-  origin: ["*", "http://localhost:3002", "http://localhost:3001", "http://localhost:3000"],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // Check if origin is in allowed list or if wildcard is present
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -34,12 +48,12 @@ app.use('/api/admin', adminRoutes);
 
 // Health Check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Antigravityt Music API is running 🎵' });
+  res.json({ status: 'ok', message: 'Rhythm Music API is running 🎵' });
 });
 
 // Default route
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to Antigravityt Music API' });
+  res.json({ message: 'Welcome to Rhythm Music API' });
 });
 
 // Error handling middleware
@@ -66,7 +80,7 @@ if (!MONGO_URI) {
 // Always start the HTTP server so health check works
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🎵 Antigravityt Music API → http://localhost:${PORT}`);
+  console.log(`🎵 Rhythm Music API → http://localhost:${PORT}`);
 });
 
 // Connect to MongoDB
