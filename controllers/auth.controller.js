@@ -224,7 +224,48 @@ const appleLogin = async (req, res) => {
     }
 };
 
+// @desc    Generate admin token for external API use
+// @route   POST /api/auth/generate-admin-token
+// @access  Protected by server secret (ADMIN_TOKEN_SECRET)
+const generateAdminToken = async (req, res) => {
+    try {
+        const { email, password, expiresIn } = req.body;
+
+        if (!password || password !== process.env.ADMIN_TOKEN_SECRET) {
+            return res.status(401).json({ success: false, message: 'Invalid admin generation secret.' });
+        }
+
+        if (!email) {
+            return res.status(400).json({ success: false, message: 'Email is required.' });
+        }
+
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        if (user.role !== 'admin') {
+            return res.status(403).json({ success: false, message: 'User is not an admin.' });
+        }
+
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: expiresIn || process.env.ADMIN_TOKEN_EXPIRE || '365d',
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Admin token generated.',
+            token,
+            user: { _id: user._id, email: user.email, role: user.role },
+        });
+    } catch (error) {
+        console.error('Generate admin token error:', error);
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     register, login, getMe,
-    googleLogin, appleLogin
+    googleLogin, appleLogin,
+    generateAdminToken
 };
