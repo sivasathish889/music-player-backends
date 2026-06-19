@@ -20,9 +20,22 @@ const userSchema = new mongoose.Schema(
         },
         password: {
             type: String,
-            required: [true, 'Password is required'],
+            required: [
+                function () {
+                    return !this.googleId && !this.appleId;
+                },
+                'Password is required'
+            ],
             minlength: [6, 'Password must be at least 6 characters'],
             select: false,
+        },
+        googleId: {
+            type: String,
+            default: null,
+        },
+        appleId: {
+            type: String,
+            default: null,
         },
         role: {
             type: String,
@@ -54,7 +67,7 @@ const userSchema = new mongoose.Schema(
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
+    if (!this.isModified('password') || !this.password) return next();
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
     next();

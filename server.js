@@ -11,15 +11,14 @@ const app = express();
 // Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173", "*"];
-
+  : ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:5173",];
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
     // Check if origin is in allowed list or if wildcard is present
-    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+    if (allowedOrigins.indexOf(origin) !== -1 && allowedOrigins.includes("*") == true) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
