@@ -18,7 +18,7 @@ app.use(cors({
     if (!origin) return callback(null, true);
 
     // Check if origin is in allowed list or if wildcard is present
-    if (allowedOrigins.indexOf(origin) !== -1 && allowedOrigins.includes("*") == true) {
+    if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes("*") == true) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
