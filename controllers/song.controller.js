@@ -3,6 +3,24 @@ const User = require('../models/User');
 const RecentlyPlayed = require('../models/RecentlyPlayed');
 const { uploadToCloudinary, deleteFromCloudinary } = require('../utils/cloudinary');
 
+const escapeRegExp = (string) => {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+const isDuplicateSong = async (title, artist, excludeId = null) => {
+    const titleRegex = new RegExp(`^${escapeRegExp(title.trim())}$`, 'i');
+    const artistRegex = new RegExp(`^${escapeRegExp(artist.trim())}$`, 'i');
+    const query = {
+        title: titleRegex,
+        artist: artistRegex,
+        isActive: true,
+    };
+    if (excludeId) {
+        query._id = { $ne: excludeId };
+    }
+    return Song.findOne(query);
+};
+
 // @desc    Get all songs
 // @route   GET /api/songs
 // @access  Public
@@ -60,6 +78,14 @@ const uploadSong = async (req, res) => {
 
         if (!title || !artist) {
             return res.status(400).json({ success: false, message: 'Title and artist are required.' });
+        }
+
+        const duplicateSong = await isDuplicateSong(title, artist);
+        if (duplicateSong) {
+            return res.status(409).json({
+                success: false,
+                message: 'Duplicate song not allowed. A song with the same title and artist already exists.',
+            });
         }
 
         if (!req.files || !req.files.audio) {
@@ -124,6 +150,21 @@ const updateSong = async (req, res) => {
         }
 
         const { title, artist, album, genre, duration, year, tags } = req.body;
+
+        if (title || artist) {
+            const duplicateSong = await isDuplicateSong(
+                title || song.title,
+                artist || song.artist,
+                song._id
+            );
+            if (duplicateSong) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Duplicate song not allowed. A song with the same title and artist already exists.',
+                });
+            }
+        }
+
         if (title) song.title = title;
         if (artist) song.artist = artist;
         if (album) song.album = album;
